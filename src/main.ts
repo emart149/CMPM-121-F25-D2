@@ -1,4 +1,3 @@
-// deno-lint-ignore-file
 // deno-lint-ignore-file prefer-const
 
 import "./style.css";
@@ -20,10 +19,21 @@ clearButton.id = "clearButton";
 clearButton.innerHTML = "Clear";
 document.body.appendChild(clearButton);
 
+const undoButton = document.createElement("button") as HTMLButtonElement;
+undoButton.id = "undoButton";
+undoButton.innerHTML = "UNDO";
+document.body.appendChild(undoButton);
+
+const redoButton = document.createElement("button") as HTMLButtonElement;
+redoButton.id = "redoButton";
+redoButton.innerHTML = "REDO";
+document.body.appendChild(redoButton);
+
 canvas.width = 256;
 canvas.height = 256;
 canvas.style.position = "absolute";
 canvas.style.left = "50px";
+canvas.style.top = "150px";
 
 document.body.appendChild(canvas);
 
@@ -41,6 +51,11 @@ interface point {
 
 let lineArr: point[][] = [];
 let pointArr: point[] = [];
+let redoArr: point[][] = [];
+
+let lineArrLastIndex = lineArr.length - 1;
+let redoArrLastIndex = redoArr.length - 1;
+let undoArr: point[] = lineArr[lineArrLastIndex]!;
 
 function drawLine(
   ctx: CanvasRenderingContext2D,
@@ -93,7 +108,30 @@ clearButton.addEventListener("click", () => {
   ctx.fillStyle = "green";
   ctx.fillRect(0, 0, 256, 256);
 });
+undoButton.addEventListener("click", () => {
+  lineArrLastIndex = lineArr.length - 1;
+  undoArr = lineArr[lineArrLastIndex]!;
+  redoArr.push(undoArr);
 
+  //lineArr[lineArrLastIndex] = [];
+  lineArr.splice(lineArrLastIndex, 1);
+  //console.log("LinearrlastINdex: "+lineArrLastIndex);
+  notify("drawing-changed");
+});
+redoButton.addEventListener("click", () => {
+  if (redoArr.length > 0) {
+    lineArrLastIndex = lineArr.length - 1;
+    undoArr = lineArr[lineArrLastIndex]!;
+    redoArrLastIndex = redoArr.length - 1;
+    let redoLine: point[] = redoArr[redoArrLastIndex]!;
+    lineArr.push(redoLine);
+    console.log(redoArrLastIndex);
+    redoArr.splice(redoArrLastIndex, 1);
+    notify("drawing-changed");
+  }
+  //Step 5 ideas:
+  //
+});
 canvas.addEventListener("mousedown", (e) => {
   x = e.offsetX;
   y = e.offsetY;
@@ -118,12 +156,13 @@ canvas.addEventListener("mousemove", (e) => {
     notify("drawing-changed");
   }
 });
-
-/*function printArr(sampleArr: point[]) {
+/*
+function printArr(sampleArr: point[]) {
   for (let pointElement of sampleArr) {
     console.log("X: " + pointElement.x + " Y: " + pointElement.y);
   }
-} */
+}
+  */
 
 globalThis.addEventListener("mouseup", () => {
   if (isDrawing) {
