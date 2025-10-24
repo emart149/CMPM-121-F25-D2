@@ -44,18 +44,46 @@ let isDrawing: boolean = false;
 let x = 0;
 let y = 0;
 
-interface point {
+interface Point {
   x: number;
   y: number;
 }
 
-let lineArr: point[][] = [];
-let pointArr: point[] = [];
-let redoArr: point[][] = [];
+class LineCommand {
+  constructor(public points: Point[]) {
+  }
+
+  display(context: CanvasRenderingContext2D) {
+    context.beginPath();
+    context.strokeStyle = "black";
+    context.lineWidth = 1;
+    const { x, y } = this.points[0]!;
+    context.moveTo(x, y);
+    for (const { x, y } of this.points) {
+      context.lineTo(x, y);
+    }
+    context.stroke();
+    context.closePath();
+    //TODO: I think that this class just draws the line onto the canvas
+    // now I have to implement class that adds points to the line and continues the drawing
+    //Note: create class that is essentially one line it contains the methods to draw a line, then undo
+    // and redo called these methods on each line to redraw them
+  }
+
+  drag(x: number, y: number) {
+    this.points.push({ x, y });
+  }
+}
+
+let commands: LineCommand[] = [];
+let lineArr: Point[][] = [];
+let pointArr: Point[] = [];
+let redoArr: Point[][] = [];
 
 let lineArrLastIndex = lineArr.length - 1;
 let redoArrLastIndex = redoArr.length - 1;
-let undoArr: point[] = lineArr[lineArrLastIndex]!;
+let undoArr: Point[] = lineArr[lineArrLastIndex]!;
+let newLine: LineCommand;
 
 function drawLine(
   ctx: CanvasRenderingContext2D,
@@ -76,19 +104,15 @@ function drawLine(
 function redraw() {
   ctx.fillStyle = "green";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.stroke();
+
   for (let thisLine of lineArr) {
     for (let i = 0; i < thisLine.length - 1; i++) {
       let curPoint = thisLine[i];
       let nextPoint = thisLine[i + 1];
 
       if (curPoint && nextPoint) {
-        drawLine(
-          ctx,
-          curPoint.x,
-          curPoint.y,
-          nextPoint.x,
-          nextPoint.y,
-        );
+        drawLine(ctx, curPoint.x, curPoint.y, nextPoint.x, nextPoint.y);
       }
     }
   }
@@ -123,24 +147,23 @@ redoButton.addEventListener("click", () => {
     lineArrLastIndex = lineArr.length - 1;
     undoArr = lineArr[lineArrLastIndex]!;
     redoArrLastIndex = redoArr.length - 1;
-    let redoLine: point[] = redoArr[redoArrLastIndex]!;
+    let redoLine: Point[] = redoArr[redoArrLastIndex]!;
     lineArr.push(redoLine);
     console.log(redoArrLastIndex);
     redoArr.splice(redoArrLastIndex, 1);
     notify("drawing-changed");
   }
-  //Step 5 ideas:
-  //
 });
 canvas.addEventListener("mousedown", (e) => {
   x = e.offsetX;
   y = e.offsetY;
 
-  let newPoint: point = { x: x, y: y };
+  let newPoint: Point = { x: x, y: y };
   pointArr = [];
   pointArr.push(newPoint);
   lineArr.push(pointArr);
-  notify("drawing-changed");
+  newLine = new LineCommand(pointArr);
+  commands.push(newLine);
   isDrawing = true;
 });
 
@@ -149,11 +172,12 @@ canvas.addEventListener("mousemove", (e) => {
     x = e.offsetX;
     y = e.offsetY;
 
-    let newPoint: point = { x: x, y: y };
+    let newPoint: Point = { x: x, y: y };
 
-    pointArr.push(newPoint);
-
-    notify("drawing-changed");
+    //pointArr.push(newPoint);
+    newLine.drag(newPoint.x, newPoint.y);
+    //notify("drawing-changed");
+    newLine.display(ctx);
   }
 });
 /*
@@ -166,7 +190,8 @@ function printArr(sampleArr: point[]) {
 
 globalThis.addEventListener("mouseup", () => {
   if (isDrawing) {
-    notify("drawing-changed");
+    //notify("drawing-changed");
+    newLine.display(ctx);
     x = 0;
     y = 0;
     pointArr = [];
