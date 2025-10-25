@@ -29,6 +29,16 @@ redoButton.id = "redoButton";
 redoButton.innerHTML = "REDO";
 document.body.appendChild(redoButton);
 
+const thickButton = document.createElement("button") as HTMLButtonElement;
+thickButton.id = "thickButton";
+thickButton.innerHTML = "THICK";
+document.body.appendChild(thickButton);
+let thicknessValue = 1;
+const thinButton = document.createElement("button") as HTMLButtonElement;
+thinButton.id = "thinButton";
+thinButton.innerHTML = "THIN";
+document.body.appendChild(thinButton);
+
 canvas.width = 256;
 canvas.height = 256;
 canvas.style.position = "absolute";
@@ -56,7 +66,7 @@ class LineCommand {
   display(context: CanvasRenderingContext2D) {
     context.beginPath();
     context.strokeStyle = "black";
-    context.lineWidth = 1;
+    context.lineWidth = thicknessValue;
     const { x, y } = this.points[0]!;
     context.moveTo(x, y);
     for (const { x, y } of this.points) {
@@ -125,6 +135,14 @@ function notify(name: string) {
 }
 
 bus.addEventListener("drawing-changed", redraw);
+
+thickButton.addEventListener("click", () => {
+  thicknessValue = 5;
+});
+
+thinButton.addEventListener("click", () => {
+  thicknessValue = .3;
+});
 
 clearButton.addEventListener("click", () => {
   lineArr = [];
