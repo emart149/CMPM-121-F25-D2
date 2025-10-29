@@ -10,9 +10,17 @@ titleElement.innerHTML = "D2 Sticker Assignment";
 
 document.body.appendChild(titleElement);
 
-const canvas = document.createElement("canvas")!;
+let canvas = document.createElement("canvas")!;
 canvas.id = "canvasVar";
+document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d")!;
+/*
+let canvasCreate = document.createElement("canvas")!;
+canvasCreate.id = "canvasVar";
+document.body.appendChild(canvasCreate);
+const canvas = document.getElementById("canvasVar") as HTMLCanvasElement;
+const ctx = canvas.getContext("2d")!;
+//???what is DOM and why do I need to attach???*/
 
 const clearButton = document.createElement("button") as HTMLButtonElement;
 clearButton.id = "clearButton";
@@ -45,12 +53,11 @@ canvas.style.position = "absolute";
 canvas.style.left = "50px";
 canvas.style.top = "150px";
 
-document.body.appendChild(canvas);
-
 ctx.fillStyle = "green";
 ctx.fillRect(0, 0, 256, 256);
 
 let isDrawing: boolean = false;
+//let mouseState: boolean = false;
 let x = 0;
 let y = 0;
 
@@ -59,6 +66,31 @@ interface Point {
   y: number;
 }
 
+//let mainCursor = null;
+/*
+class cursor{
+  constructor(inX:number,inY:number) {
+    this.cursorX = inX;
+    this.cursorY = inY;
+
+  }
+  cursorX:number;
+  cursorY: number;
+  draw(context: CanvasRenderingContext2D) {
+    //issue: cursor keeps on reprinting and line disappears at creation of new line
+    ctx.clearRect(0, 0, 256, 256);
+    context.font = "20px serif";
+    context.fillText("O", this.cursorX-3, this.cursorY+2);
+    console.log("x: " + this.cursorX + "Y: " + this.cursorY);
+    if (isDrawing) {
+      console.log(isDrawing)
+      //this.draw(context);
+    }
+  }
+  //drag(x,y) {
+
+  //}
+}*/
 class LineCommand {
   constructor(public points: Point[]) {
   }
@@ -86,55 +118,14 @@ class LineCommand {
 }
 
 let commands: LineCommand[] = [];
-let lineArr: Point[][] = [];
 let pointArr: Point[] = [];
-let redoArr: Point[][] = [];
+let redoArr: LineCommand[] = [];
 
-let lineArrLastIndex = lineArr.length - 1;
+let commandsLastIndex = commands.length - 1;
+
 let redoArrLastIndex = redoArr.length - 1;
-let undoArr: Point[] = lineArr[lineArrLastIndex]!;
+let undoArr: LineCommand;
 let newLine: LineCommand;
-
-function drawLine(
-  ctx: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-) {
-  ctx.beginPath();
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 1;
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-  ctx.closePath();
-}
-
-function redraw() {
-  ctx.fillStyle = "green";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.stroke();
-
-  for (let thisLine of lineArr) {
-    for (let i = 0; i < thisLine.length - 1; i++) {
-      let curPoint = thisLine[i];
-      let nextPoint = thisLine[i + 1];
-
-      if (curPoint && nextPoint) {
-        drawLine(ctx, curPoint.x, curPoint.y, nextPoint.x, nextPoint.y);
-      }
-    }
-  }
-}
-
-const bus = new EventTarget();
-
-function notify(name: string) {
-  bus.dispatchEvent(new Event(name));
-}
-
-bus.addEventListener("drawing-changed", redraw);
 
 thickButton.addEventListener("click", () => {
   thicknessValue = 5;
@@ -145,44 +136,67 @@ thinButton.addEventListener("click", () => {
 });
 
 clearButton.addEventListener("click", () => {
-  lineArr = [];
+  commands = [];
   pointArr = [];
   ctx.fillStyle = "green";
   ctx.fillRect(0, 0, 256, 256);
 });
 undoButton.addEventListener("click", () => {
-  lineArrLastIndex = lineArr.length - 1;
-  undoArr = lineArr[lineArrLastIndex]!;
-  redoArr.push(undoArr);
+  if (commands.length > 0) {
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, 0, 256, 256);
+    commandsLastIndex = commands.length - 1;
+    undoArr = commands[commandsLastIndex]!;
+    redoArr.push(undoArr);
+    commands.splice(commandsLastIndex, 1);
 
-  //lineArr[lineArrLastIndex] = [];
-  lineArr.splice(lineArrLastIndex, 1);
-  //console.log("LinearrlastINdex: "+lineArrLastIndex);
-  notify("drawing-changed");
-});
-redoButton.addEventListener("click", () => {
-  if (redoArr.length > 0) {
-    lineArrLastIndex = lineArr.length - 1;
-    undoArr = lineArr[lineArrLastIndex]!;
-    redoArrLastIndex = redoArr.length - 1;
-    let redoLine: Point[] = redoArr[redoArrLastIndex]!;
-    lineArr.push(redoLine);
-    console.log(redoArrLastIndex);
-    redoArr.splice(redoArrLastIndex, 1);
-    notify("drawing-changed");
+    drawCommands(commands);
+    console.log("commandsArrlen: " + commands.length);
+    //notify("drawing-changed");
   }
 });
+
+redoButton.addEventListener("click", () => {
+  if (redoArr.length > 0) {
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, 0, 256, 256);
+    commandsLastIndex = commands.length - 1;
+    undoArr = commands[commandsLastIndex]!;
+    redoArrLastIndex = redoArr.length - 1;
+
+    console.log("redoLinelastind: " + redoArrLastIndex);
+
+    let redoLine: LineCommand = redoArr[redoArrLastIndex]!;
+    commands.push(redoLine);
+
+    redoArr.splice(redoArrLastIndex, 1);
+    drawCommands(commands);
+  }
+});
+
+canvas.addEventListener("mouseenter", () => {
+  //mouseState = true;
+
+  console.log("mouseIn");
+});
+canvas.addEventListener("mouseout", () => {
+  //mouseState = false;
+  console.log("mouseOut");
+});
+
 canvas.addEventListener("mousedown", (e) => {
+  //ctx.clearRect(0, 0, 256, 256);
   x = e.offsetX;
   y = e.offsetY;
 
-  let newPoint: Point = { x: x, y: y };
-  pointArr = [];
+  //mainCursor = new cursor(x,y);
+  /*pointArr = [];
   pointArr.push(newPoint);
-  lineArr.push(pointArr);
+  lineArr.push(pointArr);*/
   newLine = new LineCommand(pointArr);
   commands.push(newLine);
   isDrawing = true;
+  //mouseState = false;
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -196,7 +210,15 @@ canvas.addEventListener("mousemove", (e) => {
     newLine.drag(newPoint.x, newPoint.y);
     //notify("drawing-changed");
     newLine.display(ctx);
-  }
+  } /*else if (mouseState) {
+     x = e.offsetX;
+    y = e.offsetY;
+
+    //mainCursor = new cursor(x,y);
+    //mainCursor.draw(ctx);
+    //newLine.display(ctx);
+
+  }*/
 });
 /*
 function printArr(sampleArr: point[]) {
@@ -209,13 +231,21 @@ function printArr(sampleArr: point[]) {
 globalThis.addEventListener("mouseup", () => {
   if (isDrawing) {
     //notify("drawing-changed");
+    //mainCursor = null;
     newLine.display(ctx);
     x = 0;
     y = 0;
     pointArr = [];
     isDrawing = false;
+    //mouseState = true;
   }
 });
+
+function drawCommands(comArr: LineCommand[]) {
+  for (let elements of comArr) {
+    elements.display(ctx);
+  }
+}
 
 //let testPoint1: point = { x: 29, y: 60 };
 //let testPoint2: point = { x: 127, y: 201 };
