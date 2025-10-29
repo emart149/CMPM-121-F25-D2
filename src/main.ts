@@ -57,7 +57,7 @@ ctx.fillStyle = "green";
 ctx.fillRect(0, 0, 256, 256);
 
 let isDrawing: boolean = false;
-//let mouseState: boolean = false;
+let mouseState: boolean = false;
 let x = 0;
 let y = 0;
 
@@ -66,39 +66,37 @@ interface Point {
   y: number;
 }
 
-//let mainCursor = null;
-/*
-class cursor{
-  constructor(inX:number,inY:number) {
+let mainCursor = null;
+let markerSize = "20px serif";
+class cursor {
+  constructor(inX: number, inY: number) {
     this.cursorX = inX;
     this.cursorY = inY;
-
   }
-  cursorX:number;
+  cursorX: number;
   cursorY: number;
   draw(context: CanvasRenderingContext2D) {
-    //issue: cursor keeps on reprinting and line disappears at creation of new line
-    ctx.clearRect(0, 0, 256, 256);
-    context.font = "20px serif";
-    context.fillText("O", this.cursorX-3, this.cursorY+2);
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, 0, 256, 256);
+    context.font = markerSize;
+    ctx.fillStyle = "black";
+
+    context.fillText(".", this.cursorX - 3, this.cursorY + 2);
     console.log("x: " + this.cursorX + "Y: " + this.cursorY);
     if (isDrawing) {
-      console.log(isDrawing)
+      console.log(isDrawing);
       //this.draw(context);
     }
   }
-  //drag(x,y) {
-
-  //}
-}*/
+}
 class LineCommand {
-  constructor(public points: Point[]) {
+  constructor(public points: Point[], public thickness: number) {
   }
 
   display(context: CanvasRenderingContext2D) {
     context.beginPath();
     context.strokeStyle = "black";
-    context.lineWidth = thicknessValue;
+    context.lineWidth = this.thickness;
     const { x, y } = this.points[0]!;
     context.moveTo(x, y);
     for (const { x, y } of this.points) {
@@ -106,10 +104,6 @@ class LineCommand {
     }
     context.stroke();
     context.closePath();
-    //TODO: I think that this class just draws the line onto the canvas
-    // now I have to implement class that adds points to the line and continues the drawing
-    //Note: create class that is essentially one line it contains the methods to draw a line, then undo
-    // and redo called these methods on each line to redraw them
   }
 
   drag(x: number, y: number) {
@@ -129,10 +123,12 @@ let newLine: LineCommand;
 
 thickButton.addEventListener("click", () => {
   thicknessValue = 5;
+  markerSize = "50px serif";
 });
 
 thinButton.addEventListener("click", () => {
   thicknessValue = .3;
+  markerSize = "15px serif";
 });
 
 clearButton.addEventListener("click", () => {
@@ -173,30 +169,34 @@ redoButton.addEventListener("click", () => {
     drawCommands(commands);
   }
 });
+canvas.addEventListener("tool-moved", () => {
+  canvas.style.cursor = "none";
+});
+canvas.addEventListener("mouseenter", (e) => {
+  x = e.offsetX;
+  y = e.offsetY;
+  ctx.fillStyle = "black";
+  mainCursor = new cursor(x, y);
+  mouseState = true;
 
-canvas.addEventListener("mouseenter", () => {
-  //mouseState = true;
-
-  console.log("mouseIn");
+  canvas.dispatchEvent(new Event("tool-moved"));
 });
 canvas.addEventListener("mouseout", () => {
-  //mouseState = false;
+  mouseState = false;
   console.log("mouseOut");
 });
 
-canvas.addEventListener("mousedown", (e) => {
-  //ctx.clearRect(0, 0, 256, 256);
-  x = e.offsetX;
-  y = e.offsetY;
-
-  //mainCursor = new cursor(x,y);
+canvas.addEventListener("mousedown", () => {
+  ctx.fillStyle = "green";
+  ctx.fillRect(0, 0, 256, 256);
+  drawCommands(commands);
   /*pointArr = [];
   pointArr.push(newPoint);
   lineArr.push(pointArr);*/
-  newLine = new LineCommand(pointArr);
+  newLine = new LineCommand(pointArr, thicknessValue);
   commands.push(newLine);
   isDrawing = true;
-  //mouseState = false;
+  mouseState = false;
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -204,40 +204,26 @@ canvas.addEventListener("mousemove", (e) => {
     x = e.offsetX;
     y = e.offsetY;
 
-    let newPoint: Point = { x: x, y: y };
-
-    //pointArr.push(newPoint);
-    newLine.drag(newPoint.x, newPoint.y);
-    //notify("drawing-changed");
+    newLine.drag(x, y);
     newLine.display(ctx);
-  } /*else if (mouseState) {
-     x = e.offsetX;
+  } else if (mouseState) {
+    x = e.offsetX;
     y = e.offsetY;
-
-    //mainCursor = new cursor(x,y);
-    //mainCursor.draw(ctx);
-    //newLine.display(ctx);
-
-  }*/
-});
-/*
-function printArr(sampleArr: point[]) {
-  for (let pointElement of sampleArr) {
-    console.log("X: " + pointElement.x + " Y: " + pointElement.y);
+    mainCursor = new cursor(x, y);
+    mainCursor.draw(ctx);
+    drawCommands(commands);
   }
-}
-  */
+});
 
 globalThis.addEventListener("mouseup", () => {
   if (isDrawing) {
-    //notify("drawing-changed");
-    //mainCursor = null;
+    mainCursor = null;
     newLine.display(ctx);
     x = 0;
     y = 0;
     pointArr = [];
     isDrawing = false;
-    //mouseState = true;
+    mouseState = true;
   }
 });
 
