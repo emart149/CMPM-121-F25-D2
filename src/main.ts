@@ -14,6 +14,7 @@ let canvas = document.createElement("canvas")!;
 canvas.id = "canvasVar";
 document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d")!;
+console.log("cursor def style: " + canvas.style.cursor);
 /*
 let canvasCreate = document.createElement("canvas")!;
 canvasCreate.id = "canvasVar";
@@ -24,7 +25,7 @@ const ctx = canvas.getContext("2d")!;
 
 const clearButton = document.createElement("button") as HTMLButtonElement;
 clearButton.id = "clearButton";
-clearButton.innerHTML = "Clear";
+clearButton.innerHTML = "CLEAR";
 document.body.appendChild(clearButton);
 
 const undoButton = document.createElement("button") as HTMLButtonElement;
@@ -47,6 +48,21 @@ thinButton.id = "thinButton";
 thinButton.innerHTML = "THIN";
 document.body.appendChild(thinButton);
 
+const emojiOneButton = document.createElement("button") as HTMLButtonElement;
+emojiOneButton.id = "EmojiOneButton";
+emojiOneButton.innerHTML = "🐕";
+document.body.appendChild(emojiOneButton);
+
+const emojiTwoButton = document.createElement("button") as HTMLButtonElement;
+emojiTwoButton.id = "EmojiTwoButton";
+emojiTwoButton.innerHTML = "🐾";
+document.body.appendChild(emojiTwoButton);
+
+const emojiThreeButton = document.createElement("button") as HTMLButtonElement;
+emojiThreeButton.id = "EmojiThreeButton";
+emojiThreeButton.innerHTML = "🌯";
+document.body.appendChild(emojiThreeButton);
+
 canvas.width = 256;
 canvas.height = 256;
 canvas.style.position = "absolute";
@@ -61,6 +77,25 @@ let mouseState: boolean = false;
 let x = 0;
 let y = 0;
 
+type commandType = EmojiCommand | LineCommand;
+let commands: commandType[] = [];
+let pointArr: Point[] = [];
+let redoArr: commandType[] = [];
+
+let commandsLastIndex = commands.length - 1;
+
+let redoArrLastIndex = redoArr.length - 1;
+let undoArr: commandType;
+let newLine: LineCommand;
+
+let newEmoji: EmojiCommand;
+
+//let emojiRedoArrLastIndex = emojiRedoArr.length - 1;
+
+//PART 9: Data oriented
+//properties in Json: whether "." or emoji, thickness, array of points(line) or just one location(sticker),
+//create button to make custom button & find way to receive user input
+
 interface Point {
   x: number;
   y: number;
@@ -68,6 +103,8 @@ interface Point {
 
 let mainCursor = null;
 let markerSize = "20px serif";
+let markerInk: string = ".";
+
 class cursor {
   constructor(inX: number, inY: number) {
     this.cursorX = inX;
@@ -81,12 +118,8 @@ class cursor {
     context.font = markerSize;
     ctx.fillStyle = "black";
 
-    context.fillText(".", this.cursorX - 3, this.cursorY + 2);
+    context.fillText(`${markerInk}`, this.cursorX - 3, this.cursorY + 2);
     console.log("x: " + this.cursorX + "Y: " + this.cursorY);
-    if (isDrawing) {
-      console.log(isDrawing);
-      //this.draw(context);
-    }
   }
 }
 class LineCommand {
@@ -110,25 +143,37 @@ class LineCommand {
     this.points.push({ x, y });
   }
 }
+class EmojiCommand {
+  constructor(
+    inX: number,
+    inY: number,
+    emoji: string,
+    public fontSize: string,
+  ) {
+    this.X = inX;
+    this.Y = inY;
+    this.ink = emoji;
+  }
+  X: number;
+  Y: number;
+  ink: string;
 
-let commands: LineCommand[] = [];
-let pointArr: Point[] = [];
-let redoArr: LineCommand[] = [];
-
-let commandsLastIndex = commands.length - 1;
-
-let redoArrLastIndex = redoArr.length - 1;
-let undoArr: LineCommand;
-let newLine: LineCommand;
+  display(context: CanvasRenderingContext2D) {
+    context.font = this.fontSize;
+    context.fillText(`${this.ink}`, this.X, this.Y);
+  }
+}
 
 thickButton.addEventListener("click", () => {
   thicknessValue = 5;
   markerSize = "50px serif";
+  markerInk = ".";
 });
 
 thinButton.addEventListener("click", () => {
   thicknessValue = .3;
   markerSize = "15px serif";
+  markerInk = ".";
 });
 
 clearButton.addEventListener("click", () => {
@@ -162,7 +207,7 @@ redoButton.addEventListener("click", () => {
 
     console.log("redoLinelastind: " + redoArrLastIndex);
 
-    let redoLine: LineCommand = redoArr[redoArrLastIndex]!;
+    let redoLine: commandType = redoArr[redoArrLastIndex]!;
     commands.push(redoLine);
 
     redoArr.splice(redoArrLastIndex, 1);
@@ -171,6 +216,20 @@ redoButton.addEventListener("click", () => {
 });
 canvas.addEventListener("tool-moved", () => {
   canvas.style.cursor = "none";
+  console.log("toolmoved");
+});
+
+emojiOneButton.addEventListener("click", () => {
+  markerInk = "🐕";
+  canvas.dispatchEvent(new Event("tool-moved"));
+});
+emojiTwoButton.addEventListener("click", () => {
+  markerInk = "🐾";
+  canvas.dispatchEvent(new Event("tool-moved"));
+});
+emojiThreeButton.addEventListener("click", () => {
+  markerInk = "🌯";
+  canvas.dispatchEvent(new Event("tool-moved"));
 });
 canvas.addEventListener("mouseenter", (e) => {
   x = e.offsetX;
@@ -186,23 +245,35 @@ canvas.addEventListener("mouseout", () => {
   console.log("mouseOut");
 });
 
-canvas.addEventListener("mousedown", () => {
+canvas.addEventListener("mousedown", (e) => {
   ctx.fillStyle = "green";
   ctx.fillRect(0, 0, 256, 256);
   drawCommands(commands);
-  /*pointArr = [];
-  pointArr.push(newPoint);
-  lineArr.push(pointArr);*/
-  newLine = new LineCommand(pointArr, thicknessValue);
-  commands.push(newLine);
+  if (markerInk == ".") {
+    newLine = new LineCommand(pointArr, thicknessValue);
+    commands.push(newLine);
+  } else if (markerInk != ".") {
+    newEmoji = new EmojiCommand(
+      e.offsetX - 3,
+      e.offsetY,
+      markerInk,
+      markerSize,
+    );
+    commands.push(newEmoji);
+    newEmoji.display(ctx);
+    console.log("tried to print emoji");
+    canvas.style.cursor = "";
+    //look into if you have to create object and how to store history for undo/redo
+  }
   isDrawing = true;
   mouseState = false;
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (isDrawing) {
+  if (isDrawing && (markerInk == ".")) {
     x = e.offsetX;
     y = e.offsetY;
+    console.log("marker ink .....");
 
     newLine.drag(x, y);
     newLine.display(ctx);
@@ -216,22 +287,30 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 globalThis.addEventListener("mouseup", () => {
-  if (isDrawing) {
+  if (isDrawing && (markerInk == ".")) {
     mainCursor = null;
     newLine.display(ctx);
     x = 0;
     y = 0;
     pointArr = [];
-    isDrawing = false;
-    mouseState = true;
   }
+  canvas.style.cursor = "none";
+  isDrawing = false;
+  mouseState = true;
 });
 
-function drawCommands(comArr: LineCommand[]) {
+function drawCommands(comArr: commandType[]) {
   for (let elements of comArr) {
     elements.display(ctx);
   }
 }
+
+/*function drawEmojiCommands(emojiArr: EmojiCommand[]) {
+  for (let elements of emojiArr) {
+    elements.drag();
+    console.log("inside drawEmojiFunc");
+  }
+}*/
 
 //let testPoint1: point = { x: 29, y: 60 };
 //let testPoint2: point = { x: 127, y: 201 };
