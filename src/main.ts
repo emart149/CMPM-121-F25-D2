@@ -14,7 +14,16 @@ let canvas = document.createElement("canvas")!;
 canvas.id = "canvasVar";
 document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d")!;
-console.log("cursor def style: " + canvas.style.cursor);
+
+canvas.width = 256;
+canvas.height = 256;
+canvas.style.position = "absolute";
+canvas.style.left = "50px";
+canvas.style.top = "150px";
+
+ctx.fillStyle = "green";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 /*
 let canvasCreate = document.createElement("canvas")!;
 canvasCreate.id = "canvasVar";
@@ -47,13 +56,6 @@ const thinButton = document.createElement("button") as HTMLButtonElement;
 thinButton.id = "thinButton";
 thinButton.innerHTML = "THIN";
 document.body.appendChild(thinButton);
-
-/*
-const exportButton = document.createElement("button") as HTMLButtonElement;
-thinButton.id = "exportButton";
-thinButton.innerHTML = "EXPORT";
-document.body.appendChild(exportButton);
-*/
 
 //----data for each emoji button----
 interface emojiSticker {
@@ -95,14 +97,27 @@ for (let emojiItem of emojiList) {
   document.body.appendChild(emojiItem.element);
 }
 
-canvas.width = 256;
-canvas.height = 256;
-canvas.style.position = "absolute";
-canvas.style.left = "50px";
-canvas.style.top = "150px";
+const exportButton = document.createElement("button") as HTMLButtonElement;
+exportButton.id = "exportButton";
+exportButton.innerHTML = "EXPORT";
+document.body.appendChild(exportButton);
 
-ctx.fillStyle = "green";
-ctx.fillRect(0, 0, 256, 256);
+exportButton.addEventListener("click", () => {
+  let canvasTemp = document.createElement("canvas")!;
+  const ctxTemp = canvasTemp.getContext("2d")!;
+  canvasTemp.width = 1024;
+  canvasTemp.height = 1024;
+  ctxTemp.fillStyle = "green";
+  ctxTemp.fillRect(0, 0, 1024, 1024);
+
+  ctxTemp.scale(4, 4);
+  drawCommands(commands, ctxTemp);
+
+  const anchor = document.createElement("a");
+  anchor.href = canvasTemp.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
+});
 
 let isDrawing: boolean = false;
 let mouseState: boolean = false;
@@ -222,7 +237,7 @@ undoButton.addEventListener("click", () => {
     redoArr.push(undoArr);
     commands.splice(commandsLastIndex, 1);
 
-    drawCommands(commands);
+    drawCommands(commands, ctx);
     console.log("commandsArrlen: " + commands.length);
     //notify("drawing-changed");
   }
@@ -242,7 +257,7 @@ redoButton.addEventListener("click", () => {
     commands.push(redoLine);
 
     redoArr.splice(redoArrLastIndex, 1);
-    drawCommands(commands);
+    drawCommands(commands, ctx);
   }
 });
 
@@ -270,7 +285,7 @@ canvas.addEventListener("mouseout", () => {
 canvas.addEventListener("mousedown", (e) => {
   ctx.fillStyle = "green";
   ctx.fillRect(0, 0, 256, 256);
-  drawCommands(commands);
+  drawCommands(commands, ctx);
   if (markerInk == ".") {
     newLine = new LineCommand(pointArr, thicknessValue);
     commands.push(newLine);
@@ -304,7 +319,7 @@ canvas.addEventListener("mousemove", (e) => {
     y = e.offsetY;
     mainCursor = new cursor(x, y);
     mainCursor.draw(ctx);
-    drawCommands(commands);
+    drawCommands(commands, ctx);
   }
 });
 
@@ -322,9 +337,12 @@ globalThis.addEventListener("mouseup", () => {
 });
 
 //----Iterates through all line and emoji commands stored within commands and prints them out----
-function drawCommands(comArr: commandType[]) {
+function drawCommands(
+  comArr: commandType[],
+  contextType: CanvasRenderingContext2D,
+) {
   for (let elements of comArr) {
-    elements.display(ctx);
+    elements.display(contextType);
   }
 }
 
