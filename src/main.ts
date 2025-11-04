@@ -48,20 +48,52 @@ thinButton.id = "thinButton";
 thinButton.innerHTML = "THIN";
 document.body.appendChild(thinButton);
 
-const emojiOneButton = document.createElement("button") as HTMLButtonElement;
-emojiOneButton.id = "EmojiOneButton";
-emojiOneButton.innerHTML = "🐕";
-document.body.appendChild(emojiOneButton);
+/*
+const exportButton = document.createElement("button") as HTMLButtonElement;
+thinButton.id = "exportButton";
+thinButton.innerHTML = "EXPORT";
+document.body.appendChild(exportButton);
+*/
 
-const emojiTwoButton = document.createElement("button") as HTMLButtonElement;
-emojiTwoButton.id = "EmojiTwoButton";
-emojiTwoButton.innerHTML = "🐾";
-document.body.appendChild(emojiTwoButton);
+//----data for each emoji button----
+interface emojiSticker {
+  name: string;
+  symbol: string;
+  element: HTMLButtonElement;
+}
 
-const emojiThreeButton = document.createElement("button") as HTMLButtonElement;
-emojiThreeButton.id = "EmojiThreeButton";
-emojiThreeButton.innerHTML = "🌯";
-document.body.appendChild(emojiThreeButton);
+let emojiList: emojiSticker[] = [{
+  name: "EmojiOneButton",
+  symbol: "🐕",
+  element: document.createElement("button") as HTMLButtonElement,
+}, {
+  name: "EmojiTwoButton",
+  symbol: "🐾",
+  element: document.createElement("button") as HTMLButtonElement,
+}, {
+  name: "EmojiThreeButton",
+  symbol: "🌯",
+  element: document.createElement("button") as HTMLButtonElement,
+}, {
+  name: "EmojiFourButton",
+  symbol: "Click for Custom Emoji: ",
+  element: document.createElement("button") as HTMLButtonElement,
+}];
+
+//----Iterates through emojiList and implements each button----
+for (let emojiItem of emojiList) {
+  emojiItem.element.onclick = () => {
+    if (emojiItem.name == "EmojiFourButton") {
+      emojiItem.symbol = prompt("Input new emoji:", "🏅")!;
+      emojiItem.element.innerHTML = "Click for Custom Emoji: " +
+        `${emojiItem.symbol}`;
+    }
+    markerInk = emojiItem.symbol;
+    canvas.dispatchEvent(new Event("tool-moved"));
+  };
+  emojiItem.element.innerHTML = `${emojiItem.symbol}`;
+  document.body.appendChild(emojiItem.element);
+}
 
 canvas.width = 256;
 canvas.height = 256;
@@ -90,17 +122,13 @@ let newLine: LineCommand;
 
 let newEmoji: EmojiCommand;
 
-//let emojiRedoArrLastIndex = emojiRedoArr.length - 1;
-
-//PART 9: Data oriented
-//properties in Json: whether "." or emoji, thickness, array of points(line) or just one location(sticker),
-//create button to make custom button & find way to receive user input
-
+//----Point Interface----
 interface Point {
   x: number;
   y: number;
 }
 
+//----Cursor, LineCommand, & EmojiCommand Classes----
 let mainCursor = null;
 let markerSize = "20px serif";
 let markerInk: string = ".";
@@ -122,6 +150,7 @@ class cursor {
     console.log("x: " + this.cursorX + "Y: " + this.cursorY);
   }
 }
+
 class LineCommand {
   constructor(public points: Point[], public thickness: number) {
   }
@@ -164,7 +193,9 @@ class EmojiCommand {
   }
 }
 
+//----Thick,Thin, Undo, and Redo button Implementations----
 thickButton.addEventListener("click", () => {
+  console.log(emojiList[3]?.symbol);
   thicknessValue = 5;
   markerSize = "50px serif";
   markerInk = ".";
@@ -214,23 +245,14 @@ redoButton.addEventListener("click", () => {
     drawCommands(commands);
   }
 });
+
+//----Tool Moved Event----
 canvas.addEventListener("tool-moved", () => {
   canvas.style.cursor = "none";
   console.log("toolmoved");
 });
 
-emojiOneButton.addEventListener("click", () => {
-  markerInk = "🐕";
-  canvas.dispatchEvent(new Event("tool-moved"));
-});
-emojiTwoButton.addEventListener("click", () => {
-  markerInk = "🐾";
-  canvas.dispatchEvent(new Event("tool-moved"));
-});
-emojiThreeButton.addEventListener("click", () => {
-  markerInk = "🌯";
-  canvas.dispatchEvent(new Event("tool-moved"));
-});
+//----Mouse Events----
 canvas.addEventListener("mouseenter", (e) => {
   x = e.offsetX;
   y = e.offsetY;
@@ -299,18 +321,12 @@ globalThis.addEventListener("mouseup", () => {
   mouseState = true;
 });
 
+//----Iterates through all line and emoji commands stored within commands and prints them out----
 function drawCommands(comArr: commandType[]) {
   for (let elements of comArr) {
     elements.display(ctx);
   }
 }
-
-/*function drawEmojiCommands(emojiArr: EmojiCommand[]) {
-  for (let elements of emojiArr) {
-    elements.drag();
-    console.log("inside drawEmojiFunc");
-  }
-}*/
 
 //let testPoint1: point = { x: 29, y: 60 };
 //let testPoint2: point = { x: 127, y: 201 };
