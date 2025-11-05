@@ -6,7 +6,7 @@ document.body.innerHTML = `
 `;
 
 const titleElement = document.createElement("h1");
-titleElement.innerHTML = "D2 Sticker Assignment";
+titleElement.innerHTML = "Elijah M. Drawing App";
 
 document.body.appendChild(titleElement);
 
@@ -18,7 +18,7 @@ const ctx = canvas.getContext("2d")!;
 canvas.width = 256;
 canvas.height = 256;
 canvas.style.position = "absolute";
-canvas.style.left = "50px";
+canvas.style.left = "200px";
 canvas.style.top = "150px";
 
 ctx.fillStyle = "green";
@@ -145,7 +145,7 @@ interface Point {
 
 //----Cursor, LineCommand, & EmojiCommand Classes----
 let mainCursor = null;
-let markerSize = "20px serif";
+let cursorSize = "20px serif";
 let markerInk: string = ".";
 
 class cursor {
@@ -158,10 +158,19 @@ class cursor {
   draw(context: CanvasRenderingContext2D) {
     ctx.fillStyle = "green";
     ctx.fillRect(0, 0, 256, 256);
-    context.font = markerSize;
-    ctx.fillStyle = "black";
+    if (markerInk != ".") {
+      context.font = "30px serif";
+    } else {
+      context.font = cursorSize;
+    }
 
-    context.fillText(`${markerInk}`, this.cursorX - 3, this.cursorY + 2);
+    ctx.fillStyle = "black";
+    if (cursorSize == "100px serif") {
+      context.fillText(`${markerInk}`, this.cursorX - 12, this.cursorY + 4);
+    } else {
+      context.fillText(`${markerInk}`, this.cursorX - 3, this.cursorY + 1);
+    }
+
     console.log("x: " + this.cursorX + "Y: " + this.cursorY);
   }
 }
@@ -211,14 +220,14 @@ class EmojiCommand {
 //----Thick,Thin, Undo, and Redo button Implementations----
 thickButton.addEventListener("click", () => {
   console.log(emojiList[3]?.symbol);
-  thicknessValue = 5;
-  markerSize = "50px serif";
+  thicknessValue = 10;
+  cursorSize = "100px serif";
   markerInk = ".";
 });
 
 thinButton.addEventListener("click", () => {
-  thicknessValue = .3;
-  markerSize = "15px serif";
+  thicknessValue = .6;
+  cursorSize = "20px serif";
   markerInk = ".";
 });
 
@@ -294,7 +303,7 @@ canvas.addEventListener("mousedown", (e) => {
       e.offsetX - 3,
       e.offsetY,
       markerInk,
-      markerSize,
+      "30px serif",
     );
     commands.push(newEmoji);
     newEmoji.display(ctx);
