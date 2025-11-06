@@ -176,12 +176,17 @@ class cursor {
 }
 
 class LineCommand {
-  constructor(public points: Point[], public thickness: number) {
+  constructor(
+    public points: Point[],
+    public thickness: number,
+    colorIn: string,
+  ) {
+    this.colorType = colorIn;
   }
-
+  colorType: string;
   display(context: CanvasRenderingContext2D) {
     context.beginPath();
-    context.strokeStyle = "black";
+    context.strokeStyle = this.colorType;
     context.lineWidth = this.thickness;
     const { x, y } = this.points[0]!;
     context.moveTo(x, y);
@@ -202,18 +207,34 @@ class EmojiCommand {
     inY: number,
     emoji: string,
     public fontSize: string,
+    rotationIn: string,
   ) {
     this.X = inX;
     this.Y = inY;
     this.ink = emoji;
+    this.rotation = rotationIn;
   }
   X: number;
   Y: number;
   ink: string;
+  rotation: string;
+
+  displayRotation(context: CanvasRenderingContext2D) {
+    context.font = this.fontSize;
+    ctx.fillStyle = "blue";
+    const emojiElement = document.createElement("div");
+    emojiElement.style.rotate = this.rotation;
+    emojiElement.textContent = this.ink;
+    emojiElement.style.font = this.fontSize;
+    emojiElement.style.position = "absolute";
+    emojiElement.style.left = `${this.X + 200}` + `px`;
+    emojiElement.style.top = `${this.Y + 256 / 2}` + `px`;
+    document.body.appendChild(emojiElement);
+  }
 
   display(context: CanvasRenderingContext2D) {
     context.font = this.fontSize;
-    context.fillText(`${this.ink}`, this.X, this.Y);
+    //context.fillText(`${this.ink}`, this.X, this.Y);
   }
 }
 
@@ -296,17 +317,22 @@ canvas.addEventListener("mousedown", (e) => {
   ctx.fillRect(0, 0, 256, 256);
   drawCommands(commands, ctx);
   if (markerInk == ".") {
-    newLine = new LineCommand(pointArr, thicknessValue);
+    newLine = new LineCommand(pointArr, thicknessValue, getRanColor());
     commands.push(newLine);
   } else if (markerInk != ".") {
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let randomRotation = Math.floor(Math.random() * 315);
+    let randpmRotationStr = `${randomRotation}` + `deg`;
     newEmoji = new EmojiCommand(
       e.offsetX - 3,
       e.offsetY,
       markerInk,
       "30px serif",
+      randpmRotationStr,
     );
     commands.push(newEmoji);
-    newEmoji.display(ctx);
+    newEmoji.displayRotation(ctx);
     console.log("tried to print emoji");
     canvas.style.cursor = "";
     //look into if you have to create object and how to store history for undo/redo
@@ -353,6 +379,13 @@ function drawCommands(
   for (let elements of comArr) {
     elements.display(contextType);
   }
+}
+
+function getRanColor(): string {
+  const r = Math.floor(Math.random() * 256);
+  const g = Math.floor(Math.random() * 256);
+  const b = Math.floor(Math.random() * 256);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 //let testPoint1: point = { x: 29, y: 60 };
